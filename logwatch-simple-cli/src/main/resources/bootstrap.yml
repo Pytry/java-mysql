@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: logwatch-cli
+logging:
+  level: error
+  file: ${catalina.home:./target}/logwatch.log.%d.%i
+    max-history: 10
+    max-size: 10MB
+  pattern:
+    file: %date{LOG_DATEFORMAT_PATTERN:yyyy-MM-dd HH:mm:ss.SSS}|%level|%class::%method::%line|%message%n
+    console: %date{LOG_DATEFORMAT_PATTERN:yyyy-MM-dd HH:mm:ss.SSS}|%level|%class::%method::%line|%message%n
