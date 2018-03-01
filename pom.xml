@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0"
-         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
 
@@ -17,8 +17,9 @@
   <packaging>pom</packaging>
 
   <modules>
-    <module>logwatch-simple-cli</module>
+    <!--<module>logwatch-simple-cli</module>-->
     <module>logwatch-data</module>
+    <module>logwatch-files</module>
     <module>logwatch-boot-cli</module>
   </modules>
 
@@ -72,7 +73,7 @@
     <profile>
       <id>integration-tests</id>
       <activation>
-        <activeByDefault>true</activeByDefault>
+        <activeByDefault>false</activeByDefault>
       </activation>
       <properties>
         <integration-tests.skip>false</integration-tests.skip>
@@ -82,9 +83,9 @@
 
   <repositories>
     <repository>
-      <id>jcenter</id>
-      <name>jCenter</name>
-      <url>https://jcenter.bintray.com/</url>
+      <id>central</id>
+      <name>Maven Central</name>
+      <url>http://repo1.maven.org/maven2/</url>
     </repository>
     <repository>
       <id>spring-milestones</id>
@@ -114,9 +115,9 @@
       </snapshots>
     </pluginRepository>
     <pluginRepository>
-      <id>jcenter</id>
-      <name>jCenter</name>
-      <url>https://jcenter.bintray.com/</url>
+      <id>central</id>
+      <name>Maven Central</name>
+      <url>http://repo1.maven.org/maven2/</url>
     </pluginRepository>
     <pluginRepository>
       <id>spring-snapshots</id>
@@ -193,9 +194,10 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <version>3.7.0</version>
+        <inherited>true</inherited>
         <configuration>
-          <target>${java.version}</target>
-          <source>${java.version}</source>
+          <target>1.8</target>
+          <source>1.8</source>
         </configuration>
       </plugin>
       <plugin>
@@ -205,15 +207,41 @@
         <inherited>true</inherited>
         <configuration>
           <skip>${unit-tests.skip}</skip>
-          <systemProperties>
-            <integration-tests.disabled>${integration-tests.skip}</integration-tests.disabled>
-          </systemProperties>
+          <includes>
+            <include>**/*Test.java</include>
+          </includes>
           <excludes>
-            <exclude>**/*IT.java</exclude>
             <exclude>**/*ITCase.java</exclude>
-            <exclude>**/*IntegrationTest.java</exclude>
-            <exclude>**/*IntegrationTests.java</exclude>
           </excludes>
+          <properties>
+            <!-- <includeTags>fast</includeTags> -->
+            <excludeTags>slow</excludeTags>
+            <!--
+            <configurationParameters>
+              junit.jupiter.conditions.deactivate = *
+            </configurationParameters>
+            -->
+          </properties>
+        </configuration>
+        <dependencies>
+          <dependency>
+            <groupId>org.junit.platform</groupId>
+            <artifactId>junit-platform-surefire-provider</artifactId>
+            <version>${junit.platform.version}</version>
+          </dependency>
+        </dependencies>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-failsafe-plugin</artifactId>
+        <version>${maven.surefire.version}</version>
+        <inherited>true</inherited>
+        <configuration>
+          <skip>${integration-tests.skip}</skip>
+          <includes>
+            <include>**/*ITCase.java</include>
+            <include>**/*ITCase.class</include>
+          </includes>
           <properties>
             <!-- <includeTags>fast</includeTags> -->
             <excludeTags>slow</excludeTags>

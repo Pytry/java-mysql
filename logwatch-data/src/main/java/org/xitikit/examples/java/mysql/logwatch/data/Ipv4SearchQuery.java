@@ -1,7 +1,6 @@
 package org.xitikit.examples.java.mysql.logwatch.data;
 
 import java.time.LocalDateTime;
-import java.util.Objects;
 
 public class Ipv4SearchQuery{
 
@@ -11,15 +10,18 @@ public class Ipv4SearchQuery{
 
     private Integer threshold;
 
+    private String accessLog;
+
     public Ipv4SearchQuery(){
 
     }
 
-    public Ipv4SearchQuery(final LocalDateTime startDate, final LocalDateTime endDate, final Integer threshold){
+    public Ipv4SearchQuery(final LocalDateTime startDate, final LocalDateTime endDate, final Integer threshold, final String accessLog){
 
         this.startDate = startDate;
         this.endDate = endDate;
         this.threshold = threshold;
+        this.accessLog = accessLog;
     }
 
     public LocalDateTime getStartDate(){
@@ -52,34 +54,13 @@ public class Ipv4SearchQuery{
         this.threshold = threshold;
     }
 
-    @Override
-    public boolean equals(final Object o){
+    public String getAccessLog(){
 
-        if(this == o){
-            return true;
-        }
-        if(!(o instanceof Ipv4SearchQuery)){
-            return false;
-        }
-        Ipv4SearchQuery that = (Ipv4SearchQuery) o;
-        return Objects.equals(getStartDate(), that.getStartDate()) &&
-            Objects.equals(getEndDate(), that.getEndDate()) &&
-            Objects.equals(getThreshold(), that.getThreshold());
+        return accessLog;
     }
 
-    @Override
-    public int hashCode(){
+    public void setAccessLog(final String accessLog){
 
-        return Objects.hash(getStartDate(), getEndDate(), getThreshold());
-    }
-
-    @Override
-    public String toString(){
-
-        return "Ipv4SearchQuery{" +
-            "startDate=" + startDate +
-            ", endDate=" + endDate +
-            ", threshold=" + threshold +
-            '}';
+        this.accessLog = accessLog;
     }
 }

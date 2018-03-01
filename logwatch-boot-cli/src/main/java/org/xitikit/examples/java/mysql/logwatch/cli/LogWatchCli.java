@@ -6,9 +6,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Service;
 import org.xitikit.examples.java.mysql.logwatch.data.*;
+import org.xitikit.examples.java.mysql.logwatch.files.AccessLogService;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Arrays;
@@ -29,13 +28,13 @@ import static org.springframework.util.StringUtils.*;
 @Service("logWatchCli")
 public class LogWatchCli implements CommandLineRunner{
 
-    private static final Logger log = LoggerFactory.getLogger(LogWatchCli.class);
-
     public static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd.HH:mm:ss");
 
-    private final LogEntryService logEntryService;
+    private static final Logger log = LoggerFactory.getLogger(LogWatchCli.class);
 
-    private final AccessLogLoader accessLogLoader;
+    private final LogEntrySearchService logEntrySearchService;
+
+    private final AccessLogService accessLogService;
 
     private final BlockedIpv4Repository blockedIpv4Repository;
 
@@ -43,19 +42,19 @@ public class LogWatchCli implements CommandLineRunner{
 
     @Autowired
     public LogWatchCli(
-        final LogEntryService logEntryService,
-        final AccessLogLoader accessLogLoader,
+        final LogEntrySearchService logEntrySearchService,
+        final AccessLogService accessLogService,
         final BlockedIpv4Repository blockedIpv4Repository){
 
-        this.logEntryService = logEntryService;
-        this.accessLogLoader = accessLogLoader;
+        this.logEntrySearchService = logEntrySearchService;
+        this.accessLogService = accessLogService;
         this.blockedIpv4Repository = blockedIpv4Repository;
         this.argumentsCollector = Collector.of(
             Ipv4SearchQueryBuilder::new,
             (builder, arg) -> {
                 if(arg.startsWith("--accessLog=")){
-                    builder.accessLog = Paths.get(arg.substring(12));
-                    // accessLogLoader.parseAndSaveAccessLogEntries(Paths.get(arg.substring(12)));
+                    builder.accessLog = arg.substring(12);
+                    // accessLogService.parseAndSaveAccessLogEntries(Paths.get(arg.substring(12)));
                 }
                 else if(arg.startsWith("--startDate=")){
                     builder.startDate = startDate(arg.substring(12));
@@ -84,6 +83,47 @@ public class LogWatchCli implements CommandLineRunner{
             Collector.Characteristics.CONCURRENT,
             Collector.Characteristics.UNORDERED
         );
+    }
+
+    /**
+     * Converts the given string into a LocalDateTime.
+     */
+    private LocalDateTime startDate(final String arg){
+
+        return arg == null ? null : LocalDateTime.from(formatter.parse(arg));
+    }
+
+    /**
+     * null-safe conversion to a {@link WatchDuration}
+     */
+    private WatchDuration duration(final String arg){
+
+        return arg == null ? null : WatchDuration.valueOf(arg);
+    }
+
+    /**
+     * Null safe integer conversion.
+     */
+    private Integer threshold(final String arg){
+
+        return hasText(arg)
+            ? parseNumber(arg, Integer.class)
+            : null;
+    }
+
+    private static LocalDateTime endDate(final LocalDateTime localDateTime, final WatchDuration watchDuration){
+
+        final LocalDateTime answer;
+        if(localDateTime == null || watchDuration == null){
+            answer = null;
+        }
+        else if(watchDuration == WatchDuration.hourly){
+            answer = localDateTime.plusHours(1);
+        }
+        else{
+            answer = localDateTime.plusDays(1);
+        }
+        return answer;
     }
 
     @Override
@@ -116,11 +156,11 @@ public class LogWatchCli implements CommandLineRunner{
     private void loadAccessLog(final Ipv4SearchQuery query){
 
         if(query != null && query.getAccessLog() != null){
-            accessLogLoader.parseAndSaveAccessLogEntries(query.getAccessLog());
+            accessLogService.parseAndSaveAccessLogEntries(query.getAccessLog());
         }
     }
 
-    private String blockedMessage(Ipv4SearchQuery query, AccessLogSearchResult result){
+    private String blockedMessage(Ipv4SearchQuery query, LogEntrySearchResult result){
         // A more robust solution would store these values as columns in the blocked_ipv4 table.
         return "BLOCKED_IPV4:" + result.getIpv4() +
             "|REASON:EXCEEDED_REQUEST_THRESHOLD" +
@@ -130,11 +170,11 @@ public class LogWatchCli implements CommandLineRunner{
             "|END_DATETIME_LOCAL:" + query.getEndDate();
     }
 
-    private List<AccessLogSearchResult> execute(final Ipv4SearchQuery ipv4SearchQuery){
+    private List<LogEntrySearchResult> execute(final Ipv4SearchQuery ipv4SearchQuery){
 
         log.info("Executing with args: " + ipv4SearchQuery);
 
-        return logEntryService.findAddressesThatExceedThreshold(ipv4SearchQuery);
+        return logEntrySearchService.findAddressesThatExceedThreshold(ipv4SearchQuery);
     }
 
     private Ipv4SearchQuery argsToQuery(final String... args){
@@ -143,47 +183,6 @@ public class LogWatchCli implements CommandLineRunner{
             .map(arg -> arg == null ? "" : arg.trim())
             .filter(arg -> arg.length() > 0)
             .collect(argumentsCollector);
-    }
-
-    private static LocalDateTime endDate(final LocalDateTime localDateTime, final WatchDuration watchDuration){
-
-        final LocalDateTime answer;
-        if(localDateTime == null || watchDuration == null){
-            answer = null;
-        }
-        else if(watchDuration == WatchDuration.hourly){
-            answer = localDateTime.plusHours(1);
-        }
-        else{
-            answer = localDateTime.plusDays(1);
-        }
-        return answer;
-    }
-
-    /**
-     * Converts the given string into a LocalDateTime.
-     */
-    private LocalDateTime startDate(final String arg){
-
-        return arg == null ? null : LocalDateTime.from(formatter.parse(arg));
-    }
-
-    /**
-     * null-safe conversion to a {@link WatchDuration}
-     */
-    private WatchDuration duration(final String arg){
-
-        return arg == null ? null : WatchDuration.valueOf(arg);
-    }
-
-    /**
-     * Null safe integer conversion.
-     */
-    private Integer threshold(final String arg){
-
-        return hasText(arg)
-            ? parseNumber(arg, Integer.class)
-            : null;
     }
 
     /**
@@ -199,7 +198,7 @@ public class LogWatchCli implements CommandLineRunner{
 
         private Integer threshold;
 
-        private Path accessLog;
+        private String accessLog;
 
         Ipv4SearchQuery build(){
 

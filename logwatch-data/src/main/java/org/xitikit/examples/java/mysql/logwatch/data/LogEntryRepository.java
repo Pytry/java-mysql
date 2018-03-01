@@ -13,7 +13,7 @@ import java.util.List;
  *
  * @author J. Keith Hoopes
  */
-@Repository("logEntryRepository")
+@Repository
 public interface LogEntryRepository extends CrudRepository<LogEntry, Integer>{
 
     @Query(nativeQuery = true, value =
@@ -25,13 +25,13 @@ public interface LogEntryRepository extends CrudRepository<LogEntry, Integer>{
             "         ipv4,\n" +
             "         count(*) AS total \n" +
             "       FROM log_entry l \n" +
-            "       WHERE l.date >= TIMESTAMP(:startDate) AND \n" +
-            "             l.date <= TIMESTAMP(:endDate) \n" +
+            "       WHERE l.date >= :startDate AND \n" +
+            "             l.date <= :endDate \n" +
             "       GROUP BY ipv4 \n" +
             "       ORDER BY total DESC \n" +
             "     ) AS ipv4_total \n" +
             "WHERE total > :threshold \n")
-    List<AccessLogSearchResult> findAllByCustomQuery(
+    List<LogEntrySearchResult> findAllByDateRangeAndThreshold(
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate,
         @Param("threshold") Integer threshold);

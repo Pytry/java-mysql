@@ -15,11 +15,10 @@ public class LogWatchApplication{
 
     public static void main(final String[] args){
 
-        System.out.println("\n\n");
         System.out.println("****************************************************");
         System.out.println("LogWatchApplication::main(" + Arrays.toString(args) + ")");
         System.out.println("****************************************************");
-        System.out.println("\n\n");
+
         SpringApplication.run(LogWatchApplication.class, args);
     }
 }
