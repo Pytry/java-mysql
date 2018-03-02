@@ -3,6 +3,7 @@ package org.xitikit.examples.java.mysql.logwatch.data;
 import javax.persistence.*;
 import javax.validation.constraints.*;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 
 import static javax.persistence.GenerationType.*;
 
@@ -166,5 +167,15 @@ public class LogEntry{
     public void setUserAgent(final String userAgent){
 
         this.userAgent = userAgent;
+    }
+
+    @Override
+    public String toString(){
+
+        return DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS").format(date) + "|" +
+            ipv4 + "|" +
+            request + "|" +
+            status  + "|" +
+            userAgent  + "|";
     }
 }

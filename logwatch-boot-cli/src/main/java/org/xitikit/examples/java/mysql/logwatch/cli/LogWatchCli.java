@@ -38,7 +38,7 @@ public class LogWatchCli implements CommandLineRunner{
 
     private final BlockedIpv4Repository blockedIpv4Repository;
 
-    private final Collector<String, Ipv4SearchQueryBuilder, Ipv4SearchQuery> argumentsCollector;
+    private final Collector<String, TerminalCommands, TerminalCommands> argumentsCollector;
 
     @Autowired
     public LogWatchCli(
@@ -49,37 +49,56 @@ public class LogWatchCli implements CommandLineRunner{
         this.logEntrySearchService = logEntrySearchService;
         this.accessLogService = accessLogService;
         this.blockedIpv4Repository = blockedIpv4Repository;
-        this.argumentsCollector = Collector.of(
-            Ipv4SearchQueryBuilder::new,
+        this.argumentsCollector = buildArgumentsCollector();
+    }
+
+    @Override
+    public void run(final String... args){
+
+        log.info("Starting LogWatchCliApplication::run(" + Arrays.toString(args) + ")");
+
+        executeAndPrint(toTerminalCommands(args));
+    }
+
+    private Collector<String, TerminalCommands, TerminalCommands> buildArgumentsCollector(){
+
+        return Collector.of(
+            TerminalCommands::new,
             (builder, arg) -> {
                 if(arg.startsWith("--accessLog=")){
-                    builder.accessLog = arg.substring(12);
-                    // accessLogService.parseAndSaveAccessLogEntries(Paths.get(arg.substring(12)));
+                    builder.setAccessLog(arg.substring(12));
                 }
                 else if(arg.startsWith("--startDate=")){
-                    builder.startDate = startDate(arg.substring(12));
+                    builder.setStartDate(toStartDate(arg.substring(12)));
                 }
                 else if(arg.startsWith("--duration=")){
-                    builder.watchDuration = duration(arg.substring(11));
+                    builder.setDuration(toDuration(arg.substring(11)));
                 }
                 else if(arg.startsWith("--threshold=")){
-                    builder.threshold = threshold(arg.substring(12));
+                    builder.setThreshold(toThreshold(arg.substring(12)));
+                }
+                else if(arg.startsWith("--ipv4=")){
+                    builder.setIpv4(arg.substring(7));
                 }
             },
-            (currentIp, additionIp) -> {
-
-                if(additionIp.startDate != null){
-                    currentIp.startDate = additionIp.startDate;
+            (current, addition) -> {
+                if(addition.getStartDate() != null){
+                    current.setStartDate(addition.getStartDate());
                 }
-                if(additionIp.watchDuration != null){
-                    currentIp.watchDuration = additionIp.watchDuration;
+                if(addition.getDuration() != null){
+                    current.setDuration(addition.getDuration());
                 }
-                if(additionIp.threshold != null && additionIp.threshold > 0){
-                    currentIp.threshold = additionIp.threshold;
+                if(addition.getThreshold() != null && addition.getThreshold() > 0){
+                    current.setThreshold(addition.getThreshold());
                 }
-                return currentIp;
+                if(addition.getAccessLog() != null){
+                    current.setAccessLog(addition.getAccessLog());
+                }
+                if(addition.getIpv4() != null){
+                    current.setIpv4(addition.getIpv4());
+                }
+                return current;
             },
-            Ipv4SearchQueryBuilder::build,
             Collector.Characteristics.CONCURRENT,
             Collector.Characteristics.UNORDERED
         );
@@ -88,7 +107,7 @@ public class LogWatchCli implements CommandLineRunner{
     /**
      * Converts the given string into a LocalDateTime.
      */
-    private LocalDateTime startDate(final String arg){
+    private LocalDateTime toStartDate(final String arg){
 
         return arg == null ? null : LocalDateTime.from(formatter.parse(arg));
     }
@@ -96,7 +115,7 @@ public class LogWatchCli implements CommandLineRunner{
     /**
      * null-safe conversion to a {@link WatchDuration}
      */
-    private WatchDuration duration(final String arg){
+    private WatchDuration toDuration(final String arg){
 
         return arg == null ? null : WatchDuration.valueOf(arg);
     }
@@ -104,14 +123,14 @@ public class LogWatchCli implements CommandLineRunner{
     /**
      * Null safe integer conversion.
      */
-    private Integer threshold(final String arg){
+    private Integer toThreshold(final String arg){
 
         return hasText(arg)
             ? parseNumber(arg, Integer.class)
             : null;
     }
 
-    private static LocalDateTime endDate(final LocalDateTime localDateTime, final WatchDuration watchDuration){
+    private static LocalDateTime toEndDate(final LocalDateTime localDateTime, final WatchDuration watchDuration){
 
         final LocalDateTime answer;
         if(localDateTime == null || watchDuration == null){
@@ -126,88 +145,104 @@ public class LogWatchCli implements CommandLineRunner{
         return answer;
     }
 
-    @Override
-    public void run(final String... args){
+    private void println(Object in){
 
-        System.out.println("************************");
-        log.info("Starting LogWatchCliApplication::run(" + Arrays.toString(args) + ")");
-        System.out.println("************************");
-
-        loadAndPrint(argsToQuery(args));
+        System.out.println(in);
     }
 
-    private void loadAndPrint(final Ipv4SearchQuery query){
+    private void executeAndPrint(final TerminalCommands commands){
 
-        loadAccessLog(query);
+        if(commands != null){
 
-        System.out.println("*************");
-        execute(query)
-            .forEach(
-                result -> System.out.println(
-                    blockedIpv4Repository.save(
-                        new BlockedIpv4(
-                            result.getIpv4(),
-                            blockedMessage(query, result)))
-                        .getReason())
+            loadAccessLog(commands.getAccessLog());
+            saveAndPrintQueryResults(toIpv4SearchQuery(commands));
+            findAndPrintAllByIpv4(commands.getIpv4());
+        }
+        else{
+            println("***************************************");
+            println("No valid arguments were found. Exiting.");
+            println("***************************************");
+        }
+    }
+
+    /**
+     * Searches for all database entries matching the given ipv4
+     * and prints them out to the console.
+     *
+     * @param ipv4 The IPv4 to search for.
+     */
+    private void findAndPrintAllByIpv4(final String ipv4){
+
+        if(ipv4 != null && !"".equals(ipv4.trim())){
+            List<LogEntry> results = logEntrySearchService.findAllByIpv4OrderByDateAsc(ipv4);
+            if(results == null || results.size() <= 0){
+                println("NO RESULTS");
+            }
+            else{
+                results.forEach(this::println);
+            }
+        }
+    }
+
+    private Ipv4SearchQuery toIpv4SearchQuery(final TerminalCommands commands){
+
+        Ipv4SearchQuery query;
+        if(commands.getStartDate() == null ||
+            commands.getDuration() == null ||
+            commands.getThreshold() == null ||
+            commands.getThreshold() <= 0){
+            query = null;
+        }
+        else{
+            query = new Ipv4SearchQuery(
+                commands.getStartDate(),
+                toEndDate(commands.getStartDate(), commands.getDuration()),
+                commands.getThreshold()
             );
-        System.out.println("*************");
+        }
+        return query;
     }
 
-    private void loadAccessLog(final Ipv4SearchQuery query){
+    private void loadAccessLog(final String accessLogPath){
 
-        if(query != null && query.getAccessLog() != null){
-            accessLogService.parseAndSaveAccessLogEntries(query.getAccessLog());
+        if(accessLogPath != null && !"".equals(accessLogPath)){
+            accessLogService.parseAndSaveAccessLogEntries(accessLogPath);
         }
     }
 
     private String blockedMessage(Ipv4SearchQuery query, LogEntrySearchResult result){
         // A more robust solution would store these values as columns in the blocked_ipv4 table.
         return "BLOCKED_IPV4:" + result.getIpv4() +
-            "|REASON:EXCEEDED_REQUEST_THRESHOLD" +
-            "|MAX_ALLOWED_REQUESTS:" + query.getThreshold() +
-            "|ACTUAL_REQUESTS:" + result.getTotal() +
-            "|START_DATETIME_LOCAL:" + query.getStartDate() +
-            "|END_DATETIME_LOCAL:" + query.getEndDate();
+            "|REASON:EXCEEDED_THRESHOLD" +
+            "|MAX_ALLOWED:" + query.getThreshold() +
+            "|ACTUAL:" + result.getTotal() +
+            "|START_DATE:" + query.getStartDate() +
+            "|END_DATE:" + query.getEndDate();
     }
 
-    private List<LogEntrySearchResult> execute(final Ipv4SearchQuery ipv4SearchQuery){
+    private void saveAndPrintQueryResults(final Ipv4SearchQuery query){
 
-        log.info("Executing with args: " + ipv4SearchQuery);
-
-        return logEntrySearchService.findAddressesThatExceedThreshold(ipv4SearchQuery);
+        if(query == null){
+            return;
+        }
+        logEntrySearchService
+            .findAddressesThatExceedThreshold(query)
+            .forEach(
+                result -> println(
+                    blockedIpv4Repository.save(
+                        new BlockedIpv4(
+                            result.getIpv4(),
+                            blockedMessage(query, result)
+                        ))
+                        .getReason())
+            );
     }
 
-    private Ipv4SearchQuery argsToQuery(final String... args){
+    private TerminalCommands toTerminalCommands(final String... args){
 
         return Arrays.stream(args)
             .map(arg -> arg == null ? "" : arg.trim())
             .filter(arg -> arg.length() > 0)
             .collect(argumentsCollector);
-    }
-
-    /**
-     * An intermediate object is needed when parsing the arguments since
-     * the "endDate" can only be calculated once the "--startDate" and
-     * "--duration" arguments have been processed.
-     */
-    private final static class Ipv4SearchQueryBuilder{
-
-        private LocalDateTime startDate;
-
-        private WatchDuration watchDuration;
-
-        private Integer threshold;
-
-        private String accessLog;
-
-        Ipv4SearchQuery build(){
-
-            return new Ipv4SearchQuery(
-                this.startDate,
-                endDate(this.startDate, watchDuration),
-                threshold,
-                accessLog
-            );
-        }
     }
 }

@@ -79,6 +79,22 @@
         <integration-tests.skip>false</integration-tests.skip>
       </properties>
     </profile>
+    <profile>
+      <id>flyway-db</id>
+      <activation>
+        <activeByDefault>true</activeByDefault>
+      </activation>
+      <properties>
+        <flyway-maven-plugin.skip>false</flyway-maven-plugin.skip>
+        <flyway.url>jdbc:mysql://localhost:3306/logwatch_db</flyway.url>
+        <flyway.user>root</flyway.user>
+        <flyway.password>zaq1@WSXcde3$RFV</flyway.password>
+        <flyway.placeholders.logwatch.db.name>logwatch_db</flyway.placeholders.logwatch.db.name>
+        <flyway.placeholders.logwatch.user.name>logwatch_user</flyway.placeholders.logwatch.user.name>
+        <flyway.placeholders.logwatch.user.password>ChangeThisInYourSettingsXmlAndApplicationProperties
+        </flyway.placeholders.logwatch.user.password>
+      </properties>
+    </profile>
   </profiles>
 
   <repositories>

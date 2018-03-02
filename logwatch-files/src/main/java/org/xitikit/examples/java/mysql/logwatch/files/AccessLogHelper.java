@@ -8,7 +8,7 @@ import java.time.format.DateTimeFormatter;
 
 public final class AccessLogHelper{
 
-    private static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
+    public static final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS");
 
     public static LogEntry toLogEntry(String input){
 

@@ -10,18 +10,15 @@ public class Ipv4SearchQuery{
 
     private Integer threshold;
 
-    private String accessLog;
-
     public Ipv4SearchQuery(){
 
     }
 
-    public Ipv4SearchQuery(final LocalDateTime startDate, final LocalDateTime endDate, final Integer threshold, final String accessLog){
+    public Ipv4SearchQuery(final LocalDateTime startDate, final LocalDateTime endDate, final Integer threshold){
 
         this.startDate = startDate;
         this.endDate = endDate;
         this.threshold = threshold;
-        this.accessLog = accessLog;
     }
 
     public LocalDateTime getStartDate(){
@@ -52,15 +49,5 @@ public class Ipv4SearchQuery{
     public void setThreshold(final Integer threshold){
 
         this.threshold = threshold;
-    }
-
-    public String getAccessLog(){
-
-        return accessLog;
-    }
-
-    public void setAccessLog(final String accessLog){
-
-        this.accessLog = accessLog;
     }
 }

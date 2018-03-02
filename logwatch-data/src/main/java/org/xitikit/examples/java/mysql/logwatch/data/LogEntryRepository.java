@@ -9,11 +9,13 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 /**
+ * A class for defining how spring-data should implement the repository
+ * which accesses the log_entry table.
+ *
  * Copyright ${year}
  *
  * @author J. Keith Hoopes
  */
-@Repository
 public interface LogEntryRepository extends CrudRepository<LogEntry, Integer>{
 
     @Query(nativeQuery = true, value =
@@ -35,4 +37,6 @@ public interface LogEntryRepository extends CrudRepository<LogEntry, Integer>{
         @Param("startDate") LocalDateTime startDate,
         @Param("endDate") LocalDateTime endDate,
         @Param("threshold") Integer threshold);
+
+    List<LogEntry> findAllByIpv4OrderByDateAsc(final String ipv4);
 }

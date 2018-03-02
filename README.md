@@ -1,70 +1,31 @@
-﻿The goal is to write a parser in Java that parses web server access log file, loads the log to MySQL and checks if a given IP makes more than a certain number of requests for the given duration. 
+﻿_Log Watch CLI_
+---------------
 
-Java
-----
-
-1. Create a java tool that can parse and load the given log file to MySQL. The delimiter of the log file is pipe (|)
-1. The tool takes "startDate", "duration" and "threshold" as command line arguments. "startDate" is of "yyyy-MM-dd.HH:mm:ss" format, "duration" can take only "hourly", "daily" as inputs and "threshold" can be an integer.
-1. This is how the tool works:
-
-
-    java -cp "parser.jar" com.ef.Parser --startDate=2017-01-01.13:00:00 --duration=hourly --threshold=100
-
-	
-1. The tool will find any IPs that made more than 100 requests starting from 2017-01-01.13:00:00 to 2017-01-01.14:00:00 (one hour) and print them to console AND also load them to another MySQL table with comments on why it's blocked.
-
-
-	java -cp "parser.jar" com.ef.Parser --startDate=2017-01-01.13:00:00 --duration=daily --threshold=250
-
-1. The tool will find any IPs that made more than 250 requests starting from 2017-01-01.13:00:00 to 2017-01-02.13:00:00 (24 hours) and print them to console AND also load them to another MySQL table with comments on why it's blocked.
-
-
-SQL
----
-
-1. Write MySQL query to find IPs that mode more than a certain number of requests for a given time period.
-    1. Write SQL to find IPs that made more than 100 requests starting from 2017-01-01.13:00:00 to 2017-01-01.14:00:00.
-
-1. Write MySQL query to find requests made by a given IP.
- 	
-
-LOG Format
-----------
-
-Date, IP, Request, Status, User Agent (pipe delimited, open the example file in text editor)
-
-Date Format: "yyyy-MM-dd HH:mm:ss.SSS"
-
-Also, please find attached a log file for your reference. 
-
-The log file assumes 200 as hourly limit and 500 as daily limit, meaning:
-
-1. When you run your parser against this file with the following parameters
-
+For convenience, all deliverable artifacts are placed in the "./deliverables" folder.
+The source code is this entire project, and is organized into three maven
+modules. 
     
-    java -cp "parser.jar" com.ef.Parser --startDate=2017-01-01.15:00:00 --duration=hourly --threshold=200
+    logwatch-data, logwatch-files, logwatch-boot-cli
 
-The output will have 192.168.11.231. If you open the log file, 192.168.11.231 has 200 or more requests between 2017-01-01.15:00:00 and 2017-01-01.15:59:59
+### Instructions
 
-1. When you run your parser against this file with the following parameters
+1. If you haven't already, install a local MySQL server available on port "3306", 
+or which ever port you wish to configure.
+    
+1. Modify the contents of "./logwatch-boot-cli/src/main/resources/application.yml"
+to contain the root user and password for your local MySQL server.
 
+1. Modify the root "pom.xml" to contain the users names and passwords for your local
+MySQL server.
 
-    java -cp "parser.jar" com.ef.Parser --startDate=2017-01-01.00:00:00 --duration=daily --threshold=500
+1. From the command line, or terminal, enter the following from the root project
+directory.
 
-The output will have  192.168.102.136. If you open the log file, 192.168.102.136 has 500 or more requests between 2017-01-01.00:00:00 and 2017-01-01.23:59:59
+Windows
+    
+    run-parser.cmd
+  
+Linux
 
-
-Deliverables
-------------
-
-1. Java program that can be run from command line
-	
-    java -cp "parser.jar" com.ef.Parser --accesslog=/path/to/file --startDate=2017-01-01.13:00:00 --duration=hourly --threshold=100 
-
-1. Source Code for the Java program
-
-1. MySQL schema used for the log data
-
-1. SQL queries for SQL test
-
-
+    sudo chmod +x ./run-parser.sh    
+    ./run-parser.sh

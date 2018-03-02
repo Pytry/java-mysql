@@ -25,3 +25,6 @@ spring:
       maximum-pool-size: 10
       connection-test-query: SELECT 1
       connection-init-sql: SELECT 1
+logging:
+  level.com: error
+  level.org: error

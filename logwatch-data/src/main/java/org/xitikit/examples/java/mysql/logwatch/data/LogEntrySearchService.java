@@ -5,4 +5,6 @@ import java.util.List;
 public interface LogEntrySearchService{
 
     List<LogEntrySearchResult> findAddressesThatExceedThreshold(Ipv4SearchQuery ipv4SearchQuery);
+
+    List<LogEntry> findAllByIpv4OrderByDateAsc(String ipv4);
 }

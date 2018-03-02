@@ -30,4 +30,13 @@ public class LogEntrySearchServiceImpl implements LogEntrySearchService{
         );
         return allByCustomQuery == null ? new ArrayList<>() : allByCustomQuery;
     }
+
+    @Override
+    public List<LogEntry> findAllByIpv4OrderByDateAsc(final String ipv4){
+
+        if(ipv4 == null){
+            throw new IllegalArgumentException("'ipv4' is required to find log entries by ipv4");
+        }
+        return logEntryRepository.findAllByIpv4OrderByDateAsc(ipv4);
+    }
 }
